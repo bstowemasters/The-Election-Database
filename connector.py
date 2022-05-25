@@ -7,43 +7,98 @@ connection = mysql.connector.connect(
   database="ELECTION"
 )
 
-def most_common(lst):
-    return max(set(lst), key=lst.count)
-
 print(connection)
+mycursor = connection.cursor()
 
 mylist = []
 records = []
 
-mycursor = connection.cursor()
-
-sql = ""
 stored = 0
 
+sql = ""
 
+# Function to calculate the most popular vote 
+def most_common(lst):
+    return max(set(lst), key=lst.count)
 
-iterator = iter(range(72))
-next(iterator)
-
-for n in iterator:
-    sql = "SELECT SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID="+str(n)
+# Function to calculate the corresponding party name based from the party_id
+def party_namer(winner):
+    sql = """SELECT	PARTY_ID, PARTY_NAME
+          FROM	CANDIDATE
+          JOIN	PARTY ON CANDIDATE.PARTY_ID = PARTY.ID
+          GROUP BY PARTY_ID, PARTY_NAME;"""
     mycursor.execute(sql)
-    records = mycursor.fetchone()
-    print("Record ", n, ": ", records[0])
     
-    mylist.append(records[0])
+    iterator = iter(range(72))
+    next(iterator)
+    
+    for element in iterator:
+        records = mycursor.fetchone()
+        if winner == records[0]:
+            name = records[1]
+            
+    return(name)
+
+
+# Function to calculate total seats by constituency
+def votes_by_constituency():
+    iterator = iter(range(72))
+    next(iterator)
+    
+    for n in iterator:
+        sql = "SELECT SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID="+str(n)
+        mycursor.execute(sql)
+        records = mycursor.fetchone()
+        #print("Record ", n, ": ", records[0]) # Used for debugging
+        mylist.append(records[0])
+    
+    stored = max(mylist)    # Calculates the most popular party_id
+
+# Function to calculate the total votes for each party
+
+def votes_by_party():    
+    iterator = iter(range(72))
+    next(iterator)
+    
+    totalVotes=0
+    percent=0
+    
+    for n in iterator:
+        sql = "SELECT SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID="+str(n)
+        mycursor.execute(sql)
+        records = mycursor.fetchone()
+        #print("Party ", n, ": ", records[0]) # Used for debugging
+        mylist.append(records[0])
+        totalVotes += records[0]
+        
+        if records[0] > percent:
+            percent = records[0]
+
+        
+    print("\n", totalVotes, " was the total amount of votes in this election across all parties")
+    percent = round((percent/totalVotes)*100, 2)
+    print("\nThe winning party had ", percent, "% of the vote\n")
+
+    print("Total number of seats awarded to the winning party: ", round((percent*650/100), 0))
+
+
+def votes_by_party_threshold():
+    for n in mylist:
+        print(mylist)   
 
 
 
 
-print("=========")
 
 
-for element in mylist:
-    print(element)
+votes_by_constituency()
 
-stored = max(mylist)
-print ("\n", stored, " - Was the highest number")
+print("\n===================================================")
+
+
+
+
+
 
 
 print("\nELECTION RESULTS BY CONSTITUENCY:\n")
@@ -57,25 +112,38 @@ for n in constID:
      
     sql = "SELECT PARTY_ID, MAX(VOTES) FROM CANDIDATE WHERE CONSTITUENCY_ID="+ str(n)
 
-    print(sql)
+    #print(sql)
     mycursor.execute(sql)
     records = mycursor.fetchone()
-    print(records)
+    #print(records)
     
     seats.append(records[0])
     
-print(seats)
+winningSeats = seats.count(most_common(seats))
+winningID = most_common(seats)
 
-print("The winning number of seats was - ", seats.count(most_common(seats)))    # Calculates teh most popular value in the list
+print("The winning number of seats was - ", str(winningSeats))    # Calculates the most popular value in the list
 
-iterator = iter(range(72))
-next(iterator)
+winName = party_namer(winningID)
 
-for i in iterator:
-    if most_common(seats) == iterator:
-        
+print("\nThe", winName, "Party - Is the winner of the election")
+print("\n===================================================\n")
 
-print(most_common(seats), " - Was the winner of the election")
+# Seats based on Simple Proportional Representation (All Votes)
+
+print("Seats based on Simple Proportional Representation (All Votes)\n")
+votes_by_party()
+
+# Seats based on SImple Proportional Representation (5% Threshold)
+
+print("\n===================================================\n")
+
+print("Seats based on Simple Proportional Representation (5% Threshold)\n")
+
+#votes_by_party_threshold()
+
+
+# Ends mySQL Connector
 
 mycursor.close()
 connection.close()
