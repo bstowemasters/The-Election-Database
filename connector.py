@@ -142,6 +142,19 @@ print("Seats based on Simple Proportional Representation (5% Threshold)\n")
 
 #votes_by_party_threshold()
 
+def myfunc():
+    
+    partyID = iter(range(72))
+    next(partyID)
+
+    for n in constID:
+        sql = "SELECT PARTY_ID, SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID="+ str(n)
+
+        mycursor.execute(sql)
+        records = mycursor.fetchone()
+        print(records[0])
+        # try to remove 5% of worst votes from list
+myfunc()
 
 # Ends mySQL Connector
 
