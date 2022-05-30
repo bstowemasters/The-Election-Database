@@ -13,16 +13,44 @@ mycursor = connection.cursor()
 mylist = []
 records = []
 
+percent = 0
+
 stored = 0
 
 sql = ""
+tab = ""
+
+# Function to auto indent text for formatting in console.
+def beautify_format(index):
+
+    if len(party_namer(records[0])) <= 7:
+        tab = "\t\t\t\t\t\t\t\t"
+    if len(party_namer(records[0])) < 12 and len(party_namer(records[0])) > 7:
+        tab = "\t\t\t\t\t\t\t"
+    if len(party_namer(records[0])) >= 12 and len(party_namer(records[0])) <= 15:
+        tab = "\t\t\t\t\t\t"
+    if len(party_namer(records[0])) > 15 and len(party_namer(records[0])) <= 20:
+        tab = "\t\t\t\t\t"
+    
+    if len(party_namer(records[0])) > 20 and len(party_namer(records[0])) < 25:
+        tab = "\t\t\t\t"
+    if len(party_namer(records[0])) >=25 and len(party_namer(records[0])) <30:
+        tab = "\t\t\t"
+    if len(party_namer(records[0])) >=30:
+        tab = "\t"
+        
+    if index < 100 and len(party_namer(records[0])) >= 12 and len(party_namer(records[0])) <= 15:
+        tab = "\t\t\t\t\t\t\t"
+    if index < 100 and len(party_namer(records[0])) > 15 and len(party_namer(records[0])) <= 20:
+        tab = "\t\t\t\t\t\t"
+    return tab
 
 # Function to calculate the most popular vote 
 def most_common(lst):
     return max(set(lst), key=lst.count)
 
 # Function to calculate the corresponding party name based from the party_id
-def party_namer(winner):
+def party_namer(party):
     sql = """SELECT	PARTY_ID, PARTY_NAME
           FROM	CANDIDATE
           JOIN	PARTY ON CANDIDATE.PARTY_ID = PARTY.ID
@@ -34,14 +62,19 @@ def party_namer(winner):
     
     for element in iterator:
         records = mycursor.fetchone()
-        if winner == records[0]:
+        if party == records[0]:
             name = records[1]
             
     return(name)
 
+#Function to print the votes information
+def print_votes(lst):
+    for element in lst:
+        print(party_namer(element), ": Votes: ", lst[0], ", ", percent, "% of the total vote") # Used for debugging
 
 # Function to calculate total seats by constituency
 def votes_by_constituency():
+    
     iterator = iter(range(72))
     next(iterator)
     
@@ -49,10 +82,12 @@ def votes_by_constituency():
         sql = "SELECT SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID="+str(n)
         mycursor.execute(sql)
         records = mycursor.fetchone()
-        #print("Record ", n, ": ", records[0]) # Used for debugging
+
         mylist.append(records[0])
+        
+        
     
-    stored = max(mylist)    # Calculates the most popular party_id
+    #stored = max(mylist)    # Calculates the most popular party_id
 
 # Function to calculate the total votes for each party
 
@@ -78,17 +113,7 @@ def votes_by_party():
     print("\n", totalVotes, " was the total amount of votes in this election across all parties")
     percent = round((percent/totalVotes)*100, 2)
     print("\nThe winning party had ", percent, "% of the vote\n")
-
     print("Total number of seats awarded to the winning party: ", round((percent*650/100), 0))
-
-
-def votes_by_party_threshold():
-    for n in mylist:
-        print(mylist)   
-
-
-
-
 
 
 votes_by_constituency()
@@ -100,10 +125,9 @@ print("\n===================================================")
 
 
 
-
 print("\nELECTION RESULTS BY CONSTITUENCY:\n")
 
-seats = []
+constWinner = []
 
 constID = iter(range(651))
 next(constID)
@@ -115,16 +139,22 @@ for n in constID:
     #print(sql)
     mycursor.execute(sql)
     records = mycursor.fetchone()
-    #print(records)
+
+    tab = beautify_format(n)
     
-    seats.append(records[0])
+    print("Constituency - ",str(n), ": ", party_namer(records[0]), tab, records[1], "| VOTES")
     
-winningSeats = seats.count(most_common(seats))
-winningID = most_common(seats)
+    constWinner.append(records[0])
+    
+winningSeats = constWinner.count(most_common(constWinner))
+winningID = most_common(constWinner)
 
 print("The winning number of seats was - ", str(winningSeats))    # Calculates the most popular value in the list
 
 winName = party_namer(winningID)
+
+for element in constWinner:
+    print(constWinner.count(element))
 
 print("\nThe", winName, "Party - Is the winner of the election")
 print("\n===================================================\n")
