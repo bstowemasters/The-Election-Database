@@ -49,6 +49,14 @@ def beautify_format(index):
 def most_common(lst):
     return max(set(lst), key=lst.count)
 
+# Function to count amount of seats for each party
+def seat_count():
+    itr = iter(range(72))
+    next(itr)
+
+    for element in itr:
+        print(party_namer(element), " - SEATS | ", constWinner.count(element))
+
 # Function to calculate the corresponding party name based from the party_id
 def party_namer(party):
     sql = """SELECT	PARTY_ID, PARTY_NAME
@@ -149,12 +157,12 @@ for n in constID:
 winningSeats = constWinner.count(most_common(constWinner))
 winningID = most_common(constWinner)
 
-print("The winning number of seats was - ", str(winningSeats))    # Calculates the most popular value in the list
+print("\nThe winning number of seats was - ", str(winningSeats), "\n")    # Calculates the most popular value in the list
 
 winName = party_namer(winningID)
 
-for element in constWinner:
-    print(constWinner.count(element))
+seat_count()
+
 
 print("\nThe", winName, "Party - Is the winner of the election")
 print("\n===================================================\n")
@@ -162,6 +170,7 @@ print("\n===================================================\n")
 # Seats based on Simple Proportional Representation (All Votes)
 
 print("Seats based on Simple Proportional Representation (All Votes)\n")
+
 votes_by_party()
 
 # Seats based on SImple Proportional Representation (5% Threshold)
@@ -185,6 +194,8 @@ def myfunc():
         print(records[0])
         # try to remove 5% of worst votes from list
 myfunc()
+
+
 
 # Ends mySQL Connector
 
