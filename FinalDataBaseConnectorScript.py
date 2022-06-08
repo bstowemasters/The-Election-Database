@@ -64,7 +64,8 @@ def votes_by_simpProp():
     totalVotes=0
     percent=0
     
-
+    print(Fore.GREEN + "Election results by simple proportion\n")
+    print('\033[39m')
     
     for n in iterator:
         sql = "SELECT SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID="+str(n)
@@ -97,7 +98,8 @@ def votes_by_simpProp5():
     
     partyPercent.clear()
     
-    
+    print(Fore.GREEN + "\nElection Results by simple proportion with 5% threshold\n")
+    print('\033[39m')
     
     iterator = iter(range(72))
     next(iterator)
@@ -128,6 +130,76 @@ def votes_by_simpProp5():
     print(" Total number of seats awarded to the winning party: ", max(partySeats))
     print(" The winner of the election is ", party_namer(winningIndex))
     
+# End of function
+ 
+# Function to calculate votes on Largest Remainder Method
+highestRemainder = [0, 0]
+highest = 0
+
+def largest_Remainder():
+    
+    print(Fore.GREEN + "Election Results by Largest Remainder (Hare-Niemeyer)")
+    print("\033[39m")
+    
+    sql = "SELECT SUM(VOTES) FROM CANDIDATE"
+    mycursor.execute(sql)
+    results = mycursor.fetchone()
+    
+    quota = results[0] / 650
+    print("Minimum votes to meet quota: ", round(quota, 0), "\n")
+    
+    for idx, item in enumerate(party_votes):
+        highest = highestRemainder[1]
+        if (item % quota) != 0:
+            if highest < item % quota:
+                #highestRemainder.clear()
+                highestRemainder[0] = idx
+                highestRemainder[1] = 1
+    
+    for idx, item in enumerate(party_votes):
+        if idx != highestRemainder[0]:
+            print(party_namer(idx+1), round((item / quota), 0), " seats")
+        else:
+            print(party_namer(idx+1), round((item / quota), 0)+1, " seats <- Awarded seat for highest remainder")
+ 
+# End of function    
+
+# Output Election results by D'Hondt (All Votes)
+
+def votes_by_dHont():
+        
+    for idx, element in enumerate(seats):   # Reset all seats to 0
+        seats[idx] = 0.0
+        
+    seatsCount = 0
+    
+    while seatsCount < 650:
+        
+        for element in party_votes:             # Set all votes to their quotient
+            idx = party_votes.index(element)
+            #print(party_namer(idx+1), " Votes - " ,element)
+            newVal = float(element) / (seats[idx] + 1)
+            
+            #print(idx)                                       # Commented print statements for debugging
+            
+            party_votes[idx] = newVal
+            
+        
+        winningQuot = max(party_votes)
+        winningIdx = party_votes.index(winningQuot)
+        
+        #print (winningQuot, " is the top quotient value")
+        seats[winningIdx] += 1
+        seatsCount += 1
+    
+    for idx, result in enumerate(seats):
+        print(party_namer(idx+1), "\tSEATS | ", result )
+    
+    print()
+    print(max(seats), " Was the winning number of seats")
+    winningIdx = seats.index(max(seats))
+    print("\nThe winning party is... ", party_namer(winningIdx+1))
+ 
 # End of function
     
 # Function to calculate the corresponding party name based from the party_id
@@ -189,44 +261,26 @@ print("\n", max(seats), " Seats were awarded to ", party_namer(index+1), "\n Win
 
 # Output election results by Simple Proportion
 
-print(Fore.GREEN + "Election results by simple proportion\n")
-print('\033[39m')
-
 votes_by_simpProp()
 
 # Output election results by Simple Proportion with 5% threshold
 
-print(Fore.GREEN + "\nElection Results by simple proportion with 5% threshold\n")
-print('\033[39m')
-   
-
 votes_by_simpProp5()
+print("\n")
 
 # Output election results by Largest Remainder (Hare-Niemeyer) (All votes)
 
-highestRemainder = [0, 0]
-highest = 0
-
-def largest_Remainder():
-    sql = "SELECT SUM(VOTES) FROM CANDIDATE"
-    mycursor.execute(sql)
-    results = mycursor.fetchone()
-    
-    quota = results[0] / 650
-    print(quota)
-    
-    for idx, item in enumerate(party_votes):
-        highest = highestRemainder[1]
-        if (item % quota) != 0:
-            if highest < item % quota:
-                #highestRemainder.clear()
-                highestRemainder[0] = idx
-                highestRemainder[1] = 1
-    
-    for idx, item in enumerate(party_votes):
-        if idx != highestRemainder[0]:
-            print(party_namer(idx+1), round((item / quota), 0), " seats")
-        else:
-            print(party_namer(idx+1), round((item / quota), 0)+1, " seats <- Awarded Additional seat for highest remainder")
-
 largest_Remainder()
+
+print()
+idx = party_votes.index(max(party_votes))
+print ("Election winner is " + party_namer(idx+1))
+
+# Election results by D'Hondt Method
+
+print(Fore.GREEN + "\nElection Results by D'Hondt Method:")
+print('\033[39m')
+votes_by_dHont()
+
+
+
