@@ -6,8 +6,7 @@ Created on Mon Jun  6 09:52:03 2022
 """
 
 import mysql.connector
-import colorama 
-from colorama import Fore, Back
+from colorama import Fore
 
 connection = mysql.connector.connect(
   host="localhost",
@@ -282,5 +281,86 @@ print(Fore.GREEN + "\nElection Results by D'Hondt Method:")
 print('\033[39m')
 votes_by_dHont()
 
+print()
+print(Fore.GREEN + "Votes By Region | Simple Proportional Representation")
+print('\033[39m')
+
+def seats_by_region():
+    
+    regionSeats = []     # List to store the number of constituencies / seats allocated for each region (Only works if sorted in order)
+    count = 0
+    
+    sql = str("SELECT CONSTITUENCY_ID, REGION_ID, PARTY_ID, SUM(VOTES) FROM CANDIDATE GROUP BY CONSTITUENCY_ID, REGION_ID ORDER BY REGION_ID, PARTY_ID")
+    mycursor.execute(sql)
+    records = mycursor.fetchall()
+    
+        
+    for idx, n in enumerate(records):
+        #party = int(records[2]) + 1
+        print("Constituency " + str(n[0]) + " region:" + str(n[1]) + " Party " + str(n[2]) + "\n")
+        print(n)
+        
+        if n[1] == records[idx-1][1] and idx != 649:
+            print("same")
+            count += 1
+        else:
+            print("END BLOCK =========================")
+            if idx != 0:
+                if idx == 649:  # Accounts for error checking last result skipping final seat allocation
+                    count += 1
+                count += 1
+                regionSeats.append(count)
+                count = 0
+
+     
+    print(regionSeats)
+
+seats_by_region()
+
+def newVotes():
+    
+    constWinners.clear()
+    regionVotes = []
+    currRegVotes = 0
+    
+    consts = iter(range(651))
+    next(consts)
+
+    for idx, element in enumerate(consts):
+        sql = "SELECT PARTY_ID, REGION_ID, MAX(VOTES) FROM CANDIDATE WHERE CONSTITUENCY_ID="+ str(element)
+        mycursor.execute(sql)
+        results = mycursor.fetchone()
+        
+        nextCursor = connection.cursor()
+        nextResults = []
+        
+        if idx != 0:
+            sql = "SELECT PARTY_ID, REGION_ID, MAX(VOTES) FROM CANDIDATE WHERE CONSTITUENCY_ID="+ str(element+1) + " ORDER BY REGION_ID"
+            nextCursor.execute(sql)
+            nextResults = nextCursor.fetchone()
+        
+            nextRes = nextResults
+            
+            if nextRes[1] == results[1]:
+                currRegVotes += results[2]
+            else:
+                if currRegVotes != 0:
+                    regionVotes.append("Votes: " + str(currRegVotes) + "\tParty ID: " + str(results[0]) + "\tRegion: " + str(results[1]))
+                    currRegVotes = 0
+        nextCursor.close()
+    print(regionVotes)
+    print("=====")
+    
+    for e in regionVotes:
+        print(e)
+    
+    
+newVotes()
+
+
+
+mycursor.close()
+connection.close()
+                
 
 
