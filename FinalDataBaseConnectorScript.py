@@ -24,9 +24,11 @@ constWinners = []
 records = []
 seats = []
 votes = []
-percent = 0
 
+percent = 0
 stored = 0
+global totalVotes
+totalVotes = 0 # Used for calculating total votes for lsit to be appended to mysql
 
 sql = ""
 
@@ -48,7 +50,7 @@ def output(string):
 # Function to add passed elements to list ( to be appended to mySQL table )
 
 def addToList(sys, pty, seat, pOfSeat, pOfVote, diff):
-    completeResults.append([sys, pty, seat, pOfSeat, pOfVote, diff])
+    completeResults.append([sys, pty, seat, round(pOfSeat, 2), round(pOfVote, 2), round(diff, 2)])
 
 # Function to calculate the winning candidate from each constituency
 def votes_by_constituency():
@@ -97,12 +99,16 @@ def votes_by_simpProp():
         numOfSeats = round((percent*650/100), 0)
         partySeats.append(numOfSeats)
         print(percent, "% of the vote\t|", "\tSeats | ", numOfSeats, "\t", party_namer(idx+1))
-            
+        addToList("Simple Proportion - By Constituency", idx+1, partySeats[idx], percent, partySeats[idx]/650*100, (percent - (partySeats[idx]/650)*100))
+        
     winningIndex = partyPercent.index(max(partyPercent))+1
     
     print("\n", totalVotes, " was the total amount of votes in this election across all parties")
     print(" Total number of seats awarded to the winning party: ", max(partySeats))
     print(" The winner of the election is ", party_namer(winningIndex))
+    
+    
+
     
     
 # End of function    
@@ -136,12 +142,14 @@ def votes_by_simpProp5():
         numOfSeats = round((percent*650/100), 0)
         partySeats.append(numOfSeats)
         print(percent, "% of the vote", "\tSeats | ", numOfSeats, "\t", party_namer(idx+1))
-           
+        addToList("Simple Proportion 5% Threshold - By Constituency", idx+1, partySeats[idx], partySeats[idx]/650*100, percent, (partySeats[idx]/650)*100 - percent)
+        
     winningIndex = partyPercent.index(max(partyPercent))+1
    
     print("\n", totalVotes, " was the total amount of votes in this election across all eligible parties")
     print(" Total number of seats awarded to the winning party: ", max(partySeats))
     print(" The winner of the election is ", party_namer(winningIndex))
+    
     
 # End of function
  
@@ -153,6 +161,8 @@ def largest_Remainder():
     
     output("Election Results by Largest Remainder (Hare-Niemeyer)")
     
+    totVotes = 0
+    
     sql = "SELECT SUM(VOTES) FROM CANDIDATE"
     mycursor.execute(sql)
     results = mycursor.fetchone()
@@ -162,6 +172,7 @@ def largest_Remainder():
     
     for idx, item in enumerate(party_votes):
         highest = highestRemainder[1]
+        totVotes += party_votes[0]
         if (item % quota) != 0:
             if highest < item % quota:
                 #highestRemainder.clear()
@@ -170,7 +181,9 @@ def largest_Remainder():
     
     for idx, item in enumerate(party_votes):
         if idx != highestRemainder[0]:
-            print(party_namer(idx+1), round((item / quota), 0), " seats")
+            seatNum = round((item / quota), 0)
+            print(party_namer(idx+1), seatNum, " seats")
+            addToList("Largest Remainder - All Votes", idx+1, seatNum, seatNum/650*100, party_votes[idx]/totVotes*100, (seatNum/650*100 - (party_votes[idx]/totVotes)*100))
         else:
             print(party_namer(idx+1), round((item / quota), 0)+1, " seats <- Awarded seat for highest remainder")
  
@@ -178,8 +191,8 @@ def largest_Remainder():
 
 # Output Election results by D'Hondt (All Votes)
 
-def votes_by_dHont():
-        
+def votes_by_dHont(): 
+    
     for idx, element in enumerate(seats):   # Reset all seats to 0
         seats[idx] = 0.0
         
@@ -206,7 +219,8 @@ def votes_by_dHont():
     
     for idx, result in enumerate(seats):
         print(party_namer(idx+1), "\tSEATS | ", result )
-    
+        #addToList("DHondt - All Votes", idx+1, result, result/650, party_votes[idx]/totalVotes, (result/650 - party_votes[idx]/totalVotes))
+        #FIX ISSUE HERE SHOWING 0 FOR TOTAL VOTES TRY CALC MANUALLY
     print()
     print(max(seats), " Was the winning number of seats")
     winningIdx = seats.index(max(seats))
@@ -387,11 +401,11 @@ print("\n", max(seats), " Seats were awarded to ", party_namer(index+1), "\n Win
 
 for idx, n in enumerate(party_votes):
     
-    pOfSeats = round((seats[idx]/650), 0)
-    pOfVotes = round((n/totalVts * 100), 2)
-    diff = round((float(pOfVotes)-float(pOfSeats) * 100), 2)
+    pOfSeats = seats[idx]/650
+    pOfVotes = n/totalVts * 100
+    diff = float(pOfVotes) - float(pOfSeats) * 100
     
-    addToList("Past the Post - By Constituency", idx, seats[idx], pOfSeats, pOfVotes, diff)
+    addToList("Past the Post - By Constituency", idx, seats[idx], pOfSeats*100, pOfVotes, diff)
 
 # Output election results by Simple Proportion
 
