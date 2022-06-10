@@ -200,6 +200,99 @@ def votes_by_dHont():
     print("\nThe winning party is... ", party_namer(winningIdx+1))
  
 # End of function
+
+# Function to calcuclate the number of seats in each region
+
+regionSeats = []     # List to store the number of constituencies / seats allocated for each region (Only works if sorted in order)
+
+
+def seats_by_region():
+    
+    count = 0
+    
+    sql = str("SELECT CONSTITUENCY_ID, REGION_ID, PARTY_ID, SUM(VOTES) FROM CANDIDATE GROUP BY CONSTITUENCY_ID, REGION_ID ORDER BY REGION_ID, PARTY_ID")
+    mycursor.execute(sql)
+    records = mycursor.fetchall()
+    
+        
+    for idx, n in enumerate(records):
+        #party = int(records[2]) + 1
+        #print("Constituency " + str(n[0]) + " region:" + str(n[1]) + " Party " + str(n[2]) + "\n")
+        #print(n)
+        
+        if n[1] == records[idx-1][1] and idx != 649:
+            #print("same")
+            count += 1
+        else:
+            #print("END BLOCK =========================")
+            if idx != 0:
+                if idx == 649:  # Accounts for error checking last result skipping final seat allocation
+                    count += 1
+                count += 1
+                regionSeats.append(count)
+                count = 0
+
+     
+    print("Total Seats Per Region\t", regionSeats, "\n")
+    
+# End of function
+
+# Function to calculate the votes by region using simple proportion
+
+def results_by_simpProp_region(thresh):
+    party = range(71)
+    region = range(12)
+
+
+    totalRegionVotes = 0
+    currRegionVotes = []
+
+    for idx, s in enumerate(seats):
+        seats[idx] = 0
+
+    for r in region:
+        #print("\nRegion: ", r+1, "\n")
+        for p in party:
+            sql = "SELECT PARTY_ID, REGION_ID, SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID=" + str(p+1) + " AND REGION_ID=" + str(r+1)
+            mycursor.execute(sql)
+            results = mycursor.fetchone()
+            
+            #print(r, " - " ,p)
+            if results[0] != None:
+                totalRegionVotes += results[2]
+                tup = (results[0], results[1], results[2])
+                currRegionVotes.append(list(tup)) # Append tuple to list for percentage calculation once total votes have been accumulated.
+        
+        if thresh == True:
+            for idx, element in enumerate(currRegionVotes):
+                percent = round(((element[2]/totalRegionVotes)*100), 0)
+                if percent < 5:
+                    totalRegionVotes -= element[2]
+                    currRegionVotes.pop(idx)
+        
+        for element in currRegionVotes:
+            percent = round(((element[2]/totalRegionVotes)*100), 0)
+                
+            #print("Party: " + str(element[0]) + "\tRegion: " + str(element[1]) + "\tTotal Votes: " + str(element[2]) + "\t% of Vote: " + str(percent) + "%")
+            
+            idx = element[0]
+                    
+            seats[idx-1] += round((percent/100 * regionSeats[r]), 0)
+        #for idx, pty in enumerate(party):
+            
+                
+        currRegionVotes.clear() # Resest the list of region and party votes for next calculation of %
+        #print("\nTotal Votes: ", str(totalRegionVotes))
+        totalRegionVotes = 0
+
+
+
+    for idx, count in enumerate(seats):
+        print("Seats: ", count, " | " ,party_namer(idx+1))
+        
+    win = seats.index(max(seats))
+    print("\nThe winner of the election is ", party_namer(win+1), " with ", max(seats), " seats")
+# End of function
     
 # Function to calculate the corresponding party name based from the party_id
 def party_namer(party):
@@ -281,83 +374,27 @@ print(Fore.GREEN + "\nElection Results by D'Hondt Method:")
 print('\033[39m')
 votes_by_dHont()
 
+# Election results by Simple Proportion (by region)
+
 print()
 print(Fore.GREEN + "Votes By Region | Simple Proportional Representation")
 print('\033[39m')
 
-def seats_by_region():
-    
-    regionSeats = []     # List to store the number of constituencies / seats allocated for each region (Only works if sorted in order)
-    count = 0
-    
-    sql = str("SELECT CONSTITUENCY_ID, REGION_ID, PARTY_ID, SUM(VOTES) FROM CANDIDATE GROUP BY CONSTITUENCY_ID, REGION_ID ORDER BY REGION_ID, PARTY_ID")
-    mycursor.execute(sql)
-    records = mycursor.fetchall()
-    
-        
-    for idx, n in enumerate(records):
-        #party = int(records[2]) + 1
-        print("Constituency " + str(n[0]) + " region:" + str(n[1]) + " Party " + str(n[2]) + "\n")
-        print(n)
-        
-        if n[1] == records[idx-1][1] and idx != 649:
-            print("same")
-            count += 1
-        else:
-            print("END BLOCK =========================")
-            if idx != 0:
-                if idx == 649:  # Accounts for error checking last result skipping final seat allocation
-                    count += 1
-                count += 1
-                regionSeats.append(count)
-                count = 0
+seats_by_region() # Calculates the amount of constituencies (seats) in each region
+results_by_simpProp_region(False)
 
-     
-    print(regionSeats)
+# Results by Simple Proportion (by region)
 
-seats_by_region()
+print()
+print(Fore.GREEN + "Votes By Region | Simple Proportional Representation 5% Threshold")
+print('\033[39m')
 
-def newVotes():
-    
-    constWinners.clear()
-    regionVotes = []
-    currRegVotes = 0
-    
-    consts = iter(range(651))
-    next(consts)
-
-    for idx, element in enumerate(consts):
-        sql = "SELECT PARTY_ID, REGION_ID, MAX(VOTES) FROM CANDIDATE WHERE CONSTITUENCY_ID="+ str(element)
-        mycursor.execute(sql)
-        results = mycursor.fetchone()
-        
-        nextCursor = connection.cursor()
-        nextResults = []
-        
-        if idx != 0:
-            sql = "SELECT PARTY_ID, REGION_ID, MAX(VOTES) FROM CANDIDATE WHERE CONSTITUENCY_ID="+ str(element+1) + " ORDER BY REGION_ID"
-            nextCursor.execute(sql)
-            nextResults = nextCursor.fetchone()
-        
-            nextRes = nextResults
-            
-            if nextRes[1] == results[1]:
-                currRegVotes += results[2]
-            else:
-                if currRegVotes != 0:
-                    regionVotes.append("Votes: " + str(currRegVotes) + "\tParty ID: " + str(results[0]) + "\tRegion: " + str(results[1]))
-                    currRegVotes = 0
-        nextCursor.close()
-    print(regionVotes)
-    print("=====")
-    
-    for e in regionVotes:
-        print(e)
-    
-    
-newVotes()
+results_by_simpProp_region(True)
 
 
+
+
+# Closing active connection
 
 mycursor.close()
 connection.close()
