@@ -29,12 +29,26 @@ percent = 0
 stored = 0
 
 sql = ""
-tab = ""
+
+completeResults = []    # Stores complete results to add to SQL table
 
 # Stores the total number of votes accross all parties for later use
 sql = "select sum(votes) from candidate"
 mycursor.execute(sql)
 votes = mycursor.fetchone()
+
+# Function to output the title of the method used
+def output(string):
+    print()
+    print(Fore.GREEN + "\n" + string)
+    print('\033[39m')
+
+# End of function
+
+# Function to add passed elements to list ( to be appended to mySQL table )
+
+def addToList(sys, pty, seat, pOfSeat, pOfVote, diff):
+    completeResults.append([sys, pty, seat, pOfSeat, pOfVote, diff])
 
 # Function to calculate the winning candidate from each constituency
 def votes_by_constituency():
@@ -48,6 +62,7 @@ def votes_by_constituency():
         records = mycursor.fetchone()
 
         party_votes.append(records[0])
+        
         
 # End of function
 
@@ -81,7 +96,7 @@ def votes_by_simpProp():
         percent = round((partyPercent[idx]/totalVotes)*100, 2)
         numOfSeats = round((percent*650/100), 0)
         partySeats.append(numOfSeats)
-        print(party_namer(idx+1), " gained", percent, "% of the vote", "\tSeats | ", numOfSeats)
+        print(percent, "% of the vote\t|", "\tSeats | ", numOfSeats, "\t", party_namer(idx+1))
             
     winningIndex = partyPercent.index(max(partyPercent))+1
     
@@ -97,8 +112,7 @@ def votes_by_simpProp5():
     
     partyPercent.clear()
     
-    print(Fore.GREEN + "\nElection Results by simple proportion with 5% threshold\n")
-    print('\033[39m')
+    output("Election Results by simple proportion with 5% threshold\n")
     
     iterator = iter(range(72))
     next(iterator)
@@ -121,7 +135,7 @@ def votes_by_simpProp5():
         percent = round((partyPercent[idx]/totalVotes)*100, 2)
         numOfSeats = round((percent*650/100), 0)
         partySeats.append(numOfSeats)
-        print(party_namer(idx+1), " gained", percent, "% of the vote", "\tSeats | ", numOfSeats)
+        print(percent, "% of the vote", "\tSeats | ", numOfSeats, "\t", party_namer(idx+1))
            
     winningIndex = partyPercent.index(max(partyPercent))+1
    
@@ -137,8 +151,7 @@ highest = 0
 
 def largest_Remainder():
     
-    print(Fore.GREEN + "Election Results by Largest Remainder (Hare-Niemeyer)")
-    print("\033[39m")
+    output("Election Results by Largest Remainder (Hare-Niemeyer)")
     
     sql = "SELECT SUM(VOTES) FROM CANDIDATE"
     mycursor.execute(sql)
@@ -206,11 +219,18 @@ def votes_by_dHont():
 regionSeats = []     # List to store the number of constituencies / seats allocated for each region (Only works if sorted in order)
 
 
-def seats_by_region():
+def seats_by_region(method):
     
+    
+    if method == "county":
+        sql = str("SELECT CONSTITUENCY_ID, COUNTY_ID, PARTY_ID, SUM(VOTES) FROM CANDIDATE GROUP BY CONSTITUENCY_ID, COUNTY_ID ORDER BY COUNTY_ID, PARTY_ID")
+        regionSeats.clear()
+    if method == "region":
+        sql = str("SELECT CONSTITUENCY_ID, REGION_ID, PARTY_ID, SUM(VOTES) FROM CANDIDATE GROUP BY CONSTITUENCY_ID, REGION_ID ORDER BY REGION_ID, PARTY_ID")
+        
     count = 0
     
-    sql = str("SELECT CONSTITUENCY_ID, REGION_ID, PARTY_ID, SUM(VOTES) FROM CANDIDATE GROUP BY CONSTITUENCY_ID, REGION_ID ORDER BY REGION_ID, PARTY_ID")
+    #sql = str("SELECT CONSTITUENCY_ID, REGION_ID, PARTY_ID, SUM(VOTES) FROM CANDIDATE GROUP BY CONSTITUENCY_ID, REGION_ID ORDER BY REGION_ID, PARTY_ID")
     mycursor.execute(sql)
     records = mycursor.fetchall()
     
@@ -239,10 +259,17 @@ def seats_by_region():
 
 # Function to calculate the votes by region using simple proportion
 
-def results_by_simpProp_region(thresh):
+def results_by_simpProp_region(thresh, method):
     party = range(71)
-    region = range(12)
-
+    
+    if method == "region":
+        value = range(12)
+    if method == "county":
+        sql = "SELECT COUNT(DISTINCT COUNTY_ID) FROM CANDIDATE;"
+        mycursor.execute(sql)
+        county = mycursor.fetchone()
+        value = range(county[0])
+        
 
     totalRegionVotes = 0
     currRegionVotes = []
@@ -250,10 +277,16 @@ def results_by_simpProp_region(thresh):
     for idx, s in enumerate(seats):
         seats[idx] = 0
 
-    for r in region:
+    for v in value:
         #print("\nRegion: ", r+1, "\n")
         for p in party:
-            sql = "SELECT PARTY_ID, REGION_ID, SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID=" + str(p+1) + " AND REGION_ID=" + str(r+1)
+            
+            # Assignment of sql query to return results based off method selected.
+            if method == "region":
+                sql = "SELECT PARTY_ID, REGION_ID, SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID=" + str(p+1) + " AND REGION_ID=" + str(v+1)
+            if method == "county":
+                sql = "SELECT PARTY_ID, REGION_ID, SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID=" + str(p+1) + " AND COUNTY_ID=" + str(v+1)
+                
             mycursor.execute(sql)
             results = mycursor.fetchone()
             
@@ -277,7 +310,7 @@ def results_by_simpProp_region(thresh):
             
             idx = element[0]
                     
-            seats[idx-1] += round((percent/100 * regionSeats[r]), 0)
+            seats[idx-1] += round((percent/100 * regionSeats[v]), 0)
         #for idx, pty in enumerate(party):
             
                 
@@ -336,20 +369,29 @@ def seat_count():
 # End of function
 
 # Output election results by Constituency
-        
+
+output("Election results by Constituency")
+
 votes_by_constituency()
 seat_count()
 
-print(Fore.GREEN + "\nElection results by Constituency\n")
-print('\033[39m')
-
+totalVts = 0
 
 for idx, n in enumerate(party_votes):
     pName = party_namer(idx+1)
-    print(pName, "\tVotes : ",n, "\t|\tSeats : ", seats[idx])
+    print("Votes : ", n, "\t|\tSeats : ", seats[idx], "\t", pName)
+    totalVts += n
     
 index = seats.index(max(seats))
 print("\n", max(seats), " Seats were awarded to ", party_namer(index+1), "\n Winning the election\n")
+
+for idx, n in enumerate(party_votes):
+    
+    pOfSeats = round((seats[idx]/650), 0)
+    pOfVotes = round((n/totalVts * 100), 2)
+    diff = round((float(pOfVotes)-float(pOfSeats) * 100), 2)
+    
+    addToList("Past the Post - By Constituency", idx, seats[idx], pOfSeats, pOfVotes, diff)
 
 # Output election results by Simple Proportion
 
@@ -366,31 +408,71 @@ largest_Remainder()
 
 print()
 idx = party_votes.index(max(party_votes))
-print ("Election winner is " + party_namer(idx+1))
+print("Election winner is " + party_namer(idx+1))
 
 # Election results by D'Hondt Method
 
-print(Fore.GREEN + "\nElection Results by D'Hondt Method:")
-print('\033[39m')
+output("Election Results by D'Hondt Method:")
+
 votes_by_dHont()
 
 # Election results by Simple Proportion (by region)
 
-print()
-print(Fore.GREEN + "Votes By Region | Simple Proportional Representation")
-print('\033[39m')
+output("Votes By Region | Simple Proportional Representation")
 
-seats_by_region() # Calculates the amount of constituencies (seats) in each region
-results_by_simpProp_region(False)
+seats_by_region("region") # Calculates the amount of constituencies (seats) in each region
+results_by_simpProp_region(False, "region")
 
-# Results by Simple Proportion (by region)
+# Results by Simple Proportion 5% Threshold (by region)
 
-print()
-print(Fore.GREEN + "Votes By Region | Simple Proportional Representation 5% Threshold")
-print('\033[39m')
+output("Votes By Region | Simple Proportional Representation 5% Threshold")
 
-results_by_simpProp_region(True)
+results_by_simpProp_region(True, "region")
 
+# Results by Simple Proportion (by county)
+
+output("Votes By County | Simple Proportional Representation")
+
+seats_by_region("county")
+results_by_simpProp_region(False, "county")
+
+# Results by Simple Proportion 5% Threshold (by county)
+
+output("Votes By County | Simple Proportional Representation 5% Threshold")
+
+seats_by_region("county")
+results_by_simpProp_region(True, "county")
+
+# Adding Results to Table
+
+for res in completeResults:
+    print(res[0], res[1], res[2], str(res[3]), str(res[4]), str(res[5]))
+
+#for element
+
+"""
+sql = "INSERT INTO RESULTS (System, Party, Seats, Percentage_of_Seats, Percentage_of_Votes, Difference_Between_Percentage_Of_Votes_And_Percent_Of_Seats) VALUES (%s, %s, %s, %s, %s, %s)"
+
+# To insert single entry
+val = ("Cool Computer Desk", "Desk", "Computer Desk With Drawers", "MDF","White", 1, "Gloss White", 49.99, 89.99)
+
+
+# To insert multiple entries:
+
+valsToAdd = ['']
+
+val = [
+       ('Modern Computer Desk', 'Desk', 'Computer Desk With Drawers', 'MDF','White', 1, 'Gloss White', 49.99, 89.99),
+       ('3 - Drawer Chest', 'Drawers', 'Drawer Unit with black handles', 'MDF', 'Gloss White', 0, '', 29.99, 69.99),
+       ('Swivel Chair', 'Chair', 'Computer Office Chair With Wheels', 'ABS Plastic','White & Black', 1, 'White Leather', 79.99, 189.99),
+       ('Broken Bedside Unit', 'Bedroom Cabinets', 'Bedside cabinet With Drawers', 'Plywood', 'Black Oak', 0, '', 19.99, 39.99)
+]  
+
+mycursor.execute(sql, val)
+
+mydb.commit()
+print(mycursor.rowcount, "Record Added Successfully.")
+"""
 
 
 
