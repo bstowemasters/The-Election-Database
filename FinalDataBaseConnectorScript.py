@@ -50,7 +50,7 @@ def output(string):
 # Function to add passed elements to list ( to be appended to mySQL table )
 
 def addToList(sys, pty, seat, pOfSeat, pOfVote, diff):
-    completeResults.append([sys, pty, seat, round(pOfSeat, 2), round(pOfVote, 2), round(diff, 2)])
+    completeResults.append([sys, pty, int(seat), round(pOfSeat, 2), round(pOfVote, 2), round(diff, 2)])
 
 # Function to calculate the winning candidate from each constituency
 def votes_by_constituency():
@@ -192,8 +192,11 @@ def largest_Remainder():
 
 # Output Election results by D'Hondt (All Votes)
 
+pty_votes = [] # Temp storage for party votes since value is changed in function
+
 def votes_by_dHont(): 
     
+    global pty_votes
     pty_votes = party_votes.copy()
     
     for idx, element in enumerate(seats):   # Reset all seats to 0
@@ -267,7 +270,7 @@ def seats_by_region(method):
                 count = 0
 
      
-    print("Total Seats Per Region\t", regionSeats, "\n")
+    print("Total Seats Per ", method, "\t" , regionSeats, "\n")
     
 # End of function
 
@@ -283,6 +286,12 @@ def results_by_simpProp_region(thresh, method):
         mycursor.execute(sql)
         county = mycursor.fetchone()
         value = range(county[0])
+    
+    temp = "" # Stores the value of whether the 5% threshold is selected.
+    if thresh == True:
+        temp = " with 5% threshold"
+    else:
+        temp = ""
         
 
     totalRegionVotes = 0
@@ -325,7 +334,6 @@ def results_by_simpProp_region(thresh, method):
             idx = element[0]
                     
             seats[idx-1] += round((percent/100 * regionSeats[v]), 0)
-        #for idx, pty in enumerate(party):
             
                 
         currRegionVotes.clear() # Resest the list of region and party votes for next calculation of %
@@ -336,6 +344,9 @@ def results_by_simpProp_region(thresh, method):
 
     for idx, count in enumerate(seats):
         print("Seats: ", count, " | " ,party_namer(idx+1))
+        pOfSeats = float(count/650*100)
+        pOfVotes = float(pty_votes[idx]) / float(totalVotes) * 100
+        addToList("Simple Propotion - By " + method + temp, idx+1, count, pOfSeats, pOfVotes, pOfSeats-pOfVotes)
         
     win = seats.index(max(seats))
     print("\nThe winner of the election is ", party_namer(win+1), " with ", max(seats), " seats")
@@ -460,7 +471,7 @@ results_by_simpProp_region(True, "county")
 # Adding Results to Table
 
 for res in completeResults:
-    print(res[0], res[1], res[2], str(res[3]), str(res[4]), str(res[5]))
+    print(res[0], res[1], res[2], str(res[3])+"%", str(res[4])+"%", str(res[5])+"%")
 
 #for element
 
