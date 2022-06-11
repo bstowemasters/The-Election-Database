@@ -27,8 +27,8 @@ votes = []
 
 percent = 0
 stored = 0
-global totalVotes
 totalVotes = 0 # Used for calculating total votes for lsit to be appended to mysql
+totVotes = 0
 
 sql = ""
 
@@ -77,6 +77,7 @@ def votes_by_simpProp():
     iterator = iter(range(72))
     next(iterator)
     
+    global totalVotes
     totalVotes=0
     percent=0
     
@@ -183,7 +184,7 @@ def largest_Remainder():
         if idx != highestRemainder[0]:
             seatNum = round((item / quota), 0)
             print(party_namer(idx+1), seatNum, " seats")
-            addToList("Largest Remainder - All Votes", idx+1, seatNum, seatNum/650*100, party_votes[idx]/totVotes*100, (seatNum/650*100 - (party_votes[idx]/totVotes)*100))
+            addToList("Largest Remainder - All Votes", idx+1, seatNum, seatNum/650*100, party_votes[idx]/totalVotes*100, (seatNum/650*100 - (party_votes[idx]/totVotes)*100))
         else:
             print(party_namer(idx+1), round((item / quota), 0)+1, " seats <- Awarded seat for highest remainder")
  
@@ -192,6 +193,8 @@ def largest_Remainder():
 # Output Election results by D'Hondt (All Votes)
 
 def votes_by_dHont(): 
+    
+    pty_votes = party_votes.copy()
     
     for idx, element in enumerate(seats):   # Reset all seats to 0
         seats[idx] = 0.0
@@ -204,9 +207,7 @@ def votes_by_dHont():
             idx = party_votes.index(element)
             #print(party_namer(idx+1), " Votes - " ,element)
             newVal = float(element) / (seats[idx] + 1)
-            
-            #print(idx)                                       # Commented print statements for debugging
-            
+                        
             party_votes[idx] = newVal
             
         
@@ -219,8 +220,7 @@ def votes_by_dHont():
     
     for idx, result in enumerate(seats):
         print(party_namer(idx+1), "\tSEATS | ", result )
-        #addToList("DHondt - All Votes", idx+1, result, result/650, party_votes[idx]/totalVotes, (result/650 - party_votes[idx]/totalVotes))
-        #FIX ISSUE HERE SHOWING 0 FOR TOTAL VOTES TRY CALC MANUALLY
+        addToList("DHondt - All Votes", idx+1, result, result/650*100, pty_votes[idx]/totalVotes*100, (float(result/650*100) - float(pty_votes[idx]/totalVotes)*100))
     print()
     print(max(seats), " Was the winning number of seats")
     winningIdx = seats.index(max(seats))
