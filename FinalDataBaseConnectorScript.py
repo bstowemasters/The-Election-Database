@@ -57,6 +57,8 @@ def output(string):
 def addToList(sys, pty, seat, pOfSeat, pOfVote, diff):
     completeResults.append([sys, pty, int(seat), round(pOfSeat, 2), round(pOfVote, 2), round(diff, 2)])
 
+# End of function
+
 # Function to calculate the winning candidate from each constituency
 def votes_by_constituency():
     
@@ -74,6 +76,7 @@ def votes_by_constituency():
 # End of function
 
 # Function to calculate the results by simple proportion
+
 partyPercent = []
 partySeats = []
 
@@ -241,7 +244,7 @@ def votes_by_dHont():
 regionSeats = []     # List to store the number of constituencies / seats allocated for each region (Only works if sorted in order)
 
 
-def seats_by_region(method):
+def seats_by_method(method):
     
     
     if method == "county":
@@ -281,7 +284,7 @@ def seats_by_region(method):
 
 # Function to calculate the votes by region using simple proportion
 
-def results_by_simpProp_region(thresh, method):
+def results_by_simpProp_method(thresh, method):
     party = range(71)
     
     if method == "region":
@@ -398,6 +401,27 @@ def seat_count():
         seats.append(constWinners.count(n))
 # End of function
 
+# Function to print and add results to database.
+def updateDB():
+    # Output Results
+    
+    for res in completeResults:
+        print(res[0], res[1], res[2], str(res[3])+"%", str(res[4])+"%", str(res[5])+"%")
+        
+    print("\nAdding Results to Database... Please wait")
+    
+    # Add to SQL
+    
+    for res in completeResults:
+        sql = "INSERT INTO RESULTS(SYS, PARTY, SEATS, PER_OF_SEATS, PER_OF_VOTES, DIFF) VALUES (%s, %s, %s, %s, %s, %s)"
+        val = (res[0], res[1], res[2], res[3], res[4], res[5])
+        mycursor.execute(sql, val)
+    
+    print("Adding data complete!")
+    
+    connection.commit()  #- Used to save the results to the database ( stops reset each run of script ) - Left open for marking purposes
+
+
 # Output election results by Constituency
 
 output("Election results by Constituency")
@@ -450,45 +474,32 @@ votes_by_dHont()
 
 output("Votes By Region | Simple Proportional Representation")
 
-seats_by_region("region") # Calculates the amount of constituencies (seats) in each region
-results_by_simpProp_region(False, "region")
+seats_by_method("region") # Calculates the amount of constituencies (seats) in each region
+results_by_simpProp_method(False, "region")
 
 # Results by Simple Proportion 5% Threshold (by region)
 
 output("Votes By Region | Simple Proportional Representation 5% Threshold")
 
-results_by_simpProp_region(True, "region")
+results_by_simpProp_method(True, "region")
 
 # Results by Simple Proportion (by county)
 
 output("Votes By County | Simple Proportional Representation")
 
-seats_by_region("county")
-results_by_simpProp_region(False, "county")
+seats_by_method("county")
+results_by_simpProp_method(False, "county")
 
 # Results by Simple Proportion 5% Threshold (by county)
 
 output("Votes By County | Simple Proportional Representation 5% Threshold")
 
-seats_by_region("county")
-results_by_simpProp_region(True, "county")
+seats_by_method("county")
+results_by_simpProp_method(True, "county")
 
-# Adding Results to Table
+# Add results to database
 
-for res in completeResults:
-    print(res[0], res[1], res[2], str(res[3])+"%", str(res[4])+"%", str(res[5])+"%")
-    
-print("\nAdding Results to Database... Please wait")
-
-for res in completeResults:
-    sql = "INSERT INTO RESULTS(SYS, PARTY, SEATS, PER_OF_SEATS, PER_OF_VOTES, DIFF) VALUES (%s, %s, %s, %s, %s, %s)"
-    val = (res[0], res[1], res[2], res[3], res[4], res[5])
-    mycursor.execute(sql, val)
-
-print("Adding data complete!")
-
-connection.commit()  #- Used to save the results to the database ( stops reset each run of script ) - Left open for marking purposes
-
+updateDB()
 
 """ Check if data has been added - commented out since test was successful.
 sql = "select * from results"
