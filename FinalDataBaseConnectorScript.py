@@ -241,16 +241,16 @@ def votes_by_dHont():
 
 # Function to calcuclate the number of seats in each region
 
-regionSeats = []     # List to store the number of constituencies / seats allocated for each region (Only works if sorted in order)
+areaSeats = []     # List to store the number of constituencies / seats allocated for each region (Only works if sorted in order)
 
 
 def seats_by_method(method):
     
     
-    if method == "county":
+    if method == "County":
         sql = str("SELECT CONSTITUENCY_ID, COUNTY_ID, PARTY_ID, SUM(VOTES) FROM CANDIDATE GROUP BY CONSTITUENCY_ID, COUNTY_ID ORDER BY COUNTY_ID, PARTY_ID")
-        regionSeats.clear()
-    if method == "region":
+        areaSeats.clear()
+    if method == "Region":
         sql = str("SELECT CONSTITUENCY_ID, REGION_ID, PARTY_ID, SUM(VOTES) FROM CANDIDATE GROUP BY CONSTITUENCY_ID, REGION_ID ORDER BY REGION_ID, PARTY_ID")
         
     count = 0
@@ -274,22 +274,22 @@ def seats_by_method(method):
                 if idx == 649:  # Accounts for error checking last result skipping final seat allocation
                     count += 1
                 count += 1
-                regionSeats.append(count)
+                areaSeats.append(count)
                 count = 0
 
      
-    print("Total Seats Per ", method, "\t" , regionSeats, "\n")
+    print("Total Seats Per ", method, "\t" , areaSeats, "\n")
     
 # End of function
 
 # Function to calculate the votes by region using simple proportion
 
-def results_by_simpProp_method(thresh, method):
+def results_by_simpProp_method(thresh, area):
     party = range(71)
     
-    if method == "region":
+    if area == "Region":
         value = range(12)
-    if method == "county":
+    if area == "County":
         sql = "SELECT COUNT(DISTINCT COUNTY_ID) FROM CANDIDATE;"
         mycursor.execute(sql)
         county = mycursor.fetchone()
@@ -313,9 +313,9 @@ def results_by_simpProp_method(thresh, method):
         for p in party:
             
             # Assignment of sql query to return results based off method selected.
-            if method == "region":
+            if area == "Region":
                 sql = "SELECT PARTY_ID, REGION_ID, SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID=" + str(p+1) + " AND REGION_ID=" + str(v+1)
-            if method == "county":
+            if area == "County":
                 sql = "SELECT PARTY_ID, REGION_ID, SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID=" + str(p+1) + " AND COUNTY_ID=" + str(v+1)
                 
             mycursor.execute(sql)
@@ -341,7 +341,7 @@ def results_by_simpProp_method(thresh, method):
             
             idx = element[0]
                     
-            seats[idx-1] += round((percent/100 * regionSeats[v]), 0)
+            seats[idx-1] += round((percent/100 * areaSeats[v]), 0)
             
                 
         currAreaVotes.clear() # Resest the list of region and party votes for next calculation of %
@@ -354,7 +354,7 @@ def results_by_simpProp_method(thresh, method):
         print("Seats: ", count, " | " ,party_namer(idx+1))
         pOfSeats = float(count/650*100)
         pOfVotes = float(pty_votes[idx]) / float(totalVotes) * 100
-        addToList("Simple Proportional Representation - By " + method + temp, idx+1, count, pOfSeats, pOfVotes, pOfSeats-pOfVotes)
+        addToList("Simple Proportional Representation - By " + area + temp, idx+1, count, pOfSeats, pOfVotes, pOfSeats-pOfVotes)
         
     win = seats.index(max(seats))
     print("\nThe winner of the election is ", party_namer(win+1), " with ", max(seats), " seats")
@@ -474,28 +474,106 @@ votes_by_dHont()
 
 output("Votes By Region | Simple Proportional Representation")
 
-seats_by_method("region") # Calculates the amount of constituencies (seats) in each region
-results_by_simpProp_method(False, "region")
+seats_by_method("Region") # Calculates the amount of constituencies (seats) in each region
+results_by_simpProp_method(False, "Region")
 
 # Results by Simple Proportion 5% Threshold (by region)
 
 output("Votes By Region | Simple Proportional Representation 5% Threshold")
 
-results_by_simpProp_method(True, "region")
+results_by_simpProp_method(True, "Region")
 
 # Results by Simple Proportion (by county)
 
 output("Votes By County | Simple Proportional Representation")
 
-seats_by_method("county")
-results_by_simpProp_method(False, "county")
+seats_by_method("County")
+results_by_simpProp_method(False, "County")
 
 # Results by Simple Proportion 5% Threshold (by county)
 
 output("Votes By County | Simple Proportional Representation 5% Threshold")
 
-seats_by_method("county")
-results_by_simpProp_method(True, "county")
+seats_by_method("County")
+results_by_simpProp_method(True, "County")
+
+# Results by D'Hondt by County
+
+""" Couldn't crack this one
+def votes_by_dHont_method(thresh, area):
+    
+    for idx, element in enumerate(seats):   # Reset all seats to 0
+        seats[idx] = 0.0
+    
+    party = range(71)
+    
+    if area == "Region":
+        value = range(12)
+    if area == "County":
+        sql = "SELECT COUNT(DISTINCT COUNTY_ID) FROM CANDIDATE;"
+        mycursor.execute(sql)
+        county = mycursor.fetchone()
+        value = range(county[0])
+    
+    temp = "" # Stores the value of whether the 5% threshold is selected.
+    if thresh == True:
+        temp = " with 5% threshold"
+    else:
+        temp = ""
+    
+    global pty_votes
+    pty_votes = party_votes.copy()
+    
+    for v in value:
+        for p in party:
+            # Assignment of sql query to return results based off method selected.
+            if area == "Region":
+                sql = "SELECT PARTY_ID, REGION_ID, SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID=" + str(p+1) + " AND REGION_ID=" + str(v+1)
+            if area == "County":
+                sql = "SELECT PARTY_ID, REGION_ID, SUM(VOTES) FROM CANDIDATE WHERE PARTY_ID=" + str(p+1) + " AND COUNTY_ID=" + str(v+1)
+            
+            mycursor.execute(sql)
+            results = mycursor.fetchone()
+            pty_votes[p] = results[2] 
+        
+    seatsCount = 0
+    
+    while seatsCount < 650:
+        
+        for element in pty_votes:             # Set all votes to their quotient
+            idx = pty_votes.index(element)
+            #print(party_namer(idx+1), " Votes - " ,element)
+            if element != None:
+                newVal = float(element) / (areaSeats[idx] + 1)
+                pty_votes[idx] = newVal
+            
+        
+        winningQuot = max(party_votes)
+        winningIdx = pty_votes.index(winningQuot)
+        
+        #print (winningQuot, " is the top quotient value")
+        seats[winningIdx] += 1
+        seatsCount += 1
+    
+    for idx, result in enumerate(seats):
+        print(party_namer(idx+1), "\tSEATS | ", result )
+        #addToList("DHondt - By " + area + temp, idx+1, result, result/650*100, pty_votes[idx]/totalVotes*100, (float(result/650*100) - float(pty_votes[idx]/totalVotes)*100))
+    print()
+    print(max(seats), " Was the winning number of seats")
+    winningIdx = seats.index(max(seats))
+    print("\nThe winning party is... ", party_namer(winningIdx+1))
+ 
+# End of function
+
+
+
+seats_by_method("County")
+output("Votes By D'Hondt Method - By County")
+votes_by_dHont_method(False, "County")
+
+# END
+
+"""
 
 # Add results to database
 
