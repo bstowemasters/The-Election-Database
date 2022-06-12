@@ -18,6 +18,11 @@ connection = mysql.connector.connect(
 print(connection)
 mycursor = connection.cursor()
 
+# Delete any curently stored results
+
+sql = "DELETE FROM RESULTS;"
+mycursor.execute(sql)
+
 party_votes = []
 constWinners = []
 
@@ -472,34 +477,27 @@ results_by_simpProp_region(True, "county")
 
 for res in completeResults:
     print(res[0], res[1], res[2], str(res[3])+"%", str(res[4])+"%", str(res[5])+"%")
+    
+print("\nAdding Results to Database... Please wait")
 
-#for element
+for res in completeResults:
+    sql = "INSERT INTO RESULTS(SYS, PARTY, SEATS, PER_OF_SEATS, PER_OF_VOTES, DIFF) VALUES (%s, %s, %s, %s, %s, %s)"
+    val = (res[0], res[1], res[2], res[3], res[4], res[5])
+    mycursor.execute(sql, val)
 
+print("Adding data complete!")
+
+connection.commit()  #- Used to save the results to the database ( stops reset each run of script ) - Left open for marking purposes
+
+
+""" Check if data has been added - commented out since test was successful.
+sql = "select * from results"
+mycursor.execute(sql)
+result = mycursor.fetchall()
+
+for element in result:
+    print(element)
 """
-sql = "INSERT INTO RESULTS (System, Party, Seats, Percentage_of_Seats, Percentage_of_Votes, Difference_Between_Percentage_Of_Votes_And_Percent_Of_Seats) VALUES (%s, %s, %s, %s, %s, %s)"
-
-# To insert single entry
-val = ("Cool Computer Desk", "Desk", "Computer Desk With Drawers", "MDF","White", 1, "Gloss White", 49.99, 89.99)
-
-
-# To insert multiple entries:
-
-valsToAdd = ['']
-
-val = [
-       ('Modern Computer Desk', 'Desk', 'Computer Desk With Drawers', 'MDF','White', 1, 'Gloss White', 49.99, 89.99),
-       ('3 - Drawer Chest', 'Drawers', 'Drawer Unit with black handles', 'MDF', 'Gloss White', 0, '', 29.99, 69.99),
-       ('Swivel Chair', 'Chair', 'Computer Office Chair With Wheels', 'ABS Plastic','White & Black', 1, 'White Leather', 79.99, 189.99),
-       ('Broken Bedside Unit', 'Bedroom Cabinets', 'Bedside cabinet With Drawers', 'Plywood', 'Black Oak', 0, '', 19.99, 39.99)
-]  
-
-mycursor.execute(sql, val)
-
-mydb.commit()
-print(mycursor.rowcount, "Record Added Successfully.")
-"""
-
-
 
 # Closing active connection
 
