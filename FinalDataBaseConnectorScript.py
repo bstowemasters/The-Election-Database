@@ -108,7 +108,7 @@ def votes_by_simpProp():
         numOfSeats = round((percent*650/100), 0)
         partySeats.append(numOfSeats)
         print(percent, "% of the vote\t|", "\tSeats | ", numOfSeats, "\t", party_namer(idx+1))
-        addToList("Simple Proportion - By Constituency", idx+1, partySeats[idx], percent, partySeats[idx]/650*100, (percent - (partySeats[idx]/650)*100))
+        addToList("Simple Proportional Representation - By Constituency", idx+1, partySeats[idx], percent, partySeats[idx]/650*100, (percent - (partySeats[idx]/650)*100))
         
     winningIndex = partyPercent.index(max(partyPercent))+1
     
@@ -151,7 +151,7 @@ def votes_by_simpProp5():
         numOfSeats = round((percent*650/100), 0)
         partySeats.append(numOfSeats)
         print(percent, "% of the vote", "\tSeats | ", numOfSeats, "\t", party_namer(idx+1))
-        addToList("Simple Proportion 5% Threshold - By Constituency", idx+1, partySeats[idx], partySeats[idx]/650*100, percent, (partySeats[idx]/650)*100 - percent)
+        addToList("Simple Proportional Representation 5% Threshold - By Constituency", idx+1, partySeats[idx], partySeats[idx]/650*100, percent, (partySeats[idx]/650)*100 - percent)
         
     winningIndex = partyPercent.index(max(partyPercent))+1
    
@@ -354,7 +354,7 @@ def results_by_simpProp_method(thresh, method):
         print("Seats: ", count, " | " ,party_namer(idx+1))
         pOfSeats = float(count/650*100)
         pOfVotes = float(pty_votes[idx]) / float(totalVotes) * 100
-        addToList("Simple Propotion - By " + method + temp, idx+1, count, pOfSeats, pOfVotes, pOfSeats-pOfVotes)
+        addToList("Simple Proportional Representation - By " + method + temp, idx+1, count, pOfSeats, pOfVotes, pOfSeats-pOfVotes)
         
     win = seats.index(max(seats))
     print("\nThe winner of the election is ", party_namer(win+1), " with ", max(seats), " seats")
