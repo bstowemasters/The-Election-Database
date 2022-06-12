@@ -302,8 +302,8 @@ def results_by_simpProp_method(thresh, method):
         temp = ""
         
 
-    totalRegionVotes = 0
-    currRegionVotes = []
+    totalAreaVotes = 0
+    currAreaVotes = []
 
     for idx, s in enumerate(seats):
         seats[idx] = 0
@@ -323,19 +323,19 @@ def results_by_simpProp_method(thresh, method):
             
             #print(r, " - " ,p)
             if results[0] != None:
-                totalRegionVotes += results[2]
+                totalAreaVotes += results[2]
                 tup = (results[0], results[1], results[2])
-                currRegionVotes.append(list(tup)) # Append tuple to list for percentage calculation once total votes have been accumulated.
+                currAreaVotes.append(list(tup)) # Append tuple to list for percentage calculation once total votes have been accumulated.
         
         if thresh == True:
-            for idx, element in enumerate(currRegionVotes):
-                percent = round(((element[2]/totalRegionVotes)*100), 0)
+            for idx, element in enumerate(currAreaVotes):
+                percent = round(((element[2]/totalAreaVotes)*100), 0)
                 if percent < 5:
-                    totalRegionVotes -= element[2]
-                    currRegionVotes.pop(idx)
+                    totalAreaVotes -= element[2]
+                    currAreaVotes.pop(idx)
         
-        for element in currRegionVotes:
-            percent = round(((element[2]/totalRegionVotes)*100), 0)
+        for element in currAreaVotes:
+            percent = round(((element[2]/totalAreaVotes)*100), 0)
                 
             #print("Party: " + str(element[0]) + "\tRegion: " + str(element[1]) + "\tTotal Votes: " + str(element[2]) + "\t% of Vote: " + str(percent) + "%")
             
@@ -344,9 +344,9 @@ def results_by_simpProp_method(thresh, method):
             seats[idx-1] += round((percent/100 * regionSeats[v]), 0)
             
                 
-        currRegionVotes.clear() # Resest the list of region and party votes for next calculation of %
+        currAreaVotes.clear() # Resest the list of region and party votes for next calculation of %
         #print("\nTotal Votes: ", str(totalRegionVotes))
-        totalRegionVotes = 0
+        totalAreaVotes = 0
 
 
 
@@ -445,7 +445,7 @@ for idx, n in enumerate(party_votes):
     pOfVotes = n/totalVts * 100
     diff = float(pOfVotes) - float(pOfSeats) * 100
     
-    addToList("Past the Post - By Constituency", idx, seats[idx], pOfSeats*100, pOfVotes, diff)
+    addToList("Past the Post - By Constituency", idx+1, seats[idx], pOfSeats*100, pOfVotes, diff)
 
 # Output election results by Simple Proportion
 
