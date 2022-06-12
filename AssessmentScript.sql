@@ -4183,6 +4183,7 @@ INSERT INTO PARTY VALUES (71, 'The Constitution and Reform Party');
 
 -- Queries have been parsed through mysql-python connector.
 
+-- Queries below should be ignored, they are simply test queries before implementing into python to confirm returned data set.
 SELECT PARTY_ID, REGION_ID, MAX(VOTES) FROM CANDIDATE;
 SELECT party_id, SUM(VOTES) FROM CANDIDATE where party_id = 8 and region_id = 1;
 SELECT PARTY_ID, VOTES, COUNT(distinct CONSTITUENCY_ID) FROM CANDIDATE WHERE COUNTY_ID = 55;
